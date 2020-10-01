@@ -9,54 +9,56 @@ using System.Text;
 using System.Threading.Tasks;
 using SolidEdgeFileProperties;
 using Cad;
+using Newtonsoft.Json.Linq;
 
 namespace Extractor
 {
     class Program
     {
         [STAThread]
-        [Obsolete]
+        //[Obsolete]
         static void Main()
         {
             try
             {
 
-                //Refactoring
-                //
-                //GetFiles
-                //Structure
                 //args
                 //timing
-                //short ID for name file
 
-                string id = ShortId.Generate();
-                string path = @"C:\Users\Slimane\Desktop\dev\fasteners"+ id +".txt";
-                if (!File.Exists(path))
+                // Path to cad
+                string cadFiles = @"C:\Users\recs\Desktop\fasteners_downloaded_from_TC";
+
+                //Short ID for the file name
+                string id = Guid.NewGuid().ToString();
+                string path = @"C:\Users\recs\Desktop\Report_fasteners_" + id + ".txt";
+
+                var jArray = new JArray();
+
+                // Create a file to write to.
+                foreach (var itemPath in Directory.GetFiles(cadFiles))
                 {
-                    // Create a file to write to.
-                    using (StreamWriter sw = File.CreateText(path))
+                    var screw = Cache.ParseItem(itemPath);
+                    if (Path.GetExtension(itemPath).ToLower() == ".par")
                     {
+                        var jObject = JObject.FromObject(screw);
 
-                        foreach (var itemPath in Directory.GetFiles(@"C:\Users\Slimane\Desktop\It's here\solidedge\Hardware\Washer"))
-                        {
-                            //string itemPath = @"C:\Users\Slimane\Desktop\It's here\solidedge\Hardware\Nuts\E_AB_0.138-32_SS.par";
-                            var screw = Cache.ParseItem(itemPath);
-                            if (Path.GetExtension(itemPath).ToLower() == ".par")
-                            {
-                                sw.WriteLine($"{0}:{current:{0}, revision:{1}, filename:{2}},", screw.JdeNumber, screw.Revision, screw.Filename);
+                        var screwJObject = new JObject();
 
-                            }
-                        }
+                        screwJObject.Add(screw.JdeNumber, jObject);
+                        jArray.Add(screwJObject);
+
                     }
                 }
 
+                File.WriteAllText(path, jArray.ToString());
+
+                //Console.ReadKey();
 
             }
-            finally
+            catch (Exception e)
             {
-                Console.ReadKey();
-            }
 
+            }
         }
     }
 }
